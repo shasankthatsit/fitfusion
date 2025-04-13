@@ -1,0 +1,824 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FitFusion - Smart Healthcare</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.Default.css" />
+    <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet.markercluster@1.4.1/dist/leaflet.markercluster.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #f0f4ff, #e0f7fa);
+            color: #1a1a1a;
+            overflow-x: hidden;
+        }
+        
+        .page {
+            display: none;
+            padding: 30px;
+            max-width: 1200px;
+            margin: 0 auto;
+            animation: fadeIn 0.5s ease-in;
+        }
+        
+        .active {
+            display: block;
+        }
+        
+        header {
+            text-align: center;
+            padding: 60px 20px;
+            background: linear-gradient(45deg, #00bcd4, #007bff);
+            color: white;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+        }
+        
+        header h1 {
+            font-size: 48px;
+            font-weight: 700;
+        }
+        
+        .nav-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-top: 30px;
+        }
+        
+        button {
+            padding: 12px 24px;
+            font-size: 16px;
+            font-weight: 600;
+            border: none;
+            border-radius: 50px;
+            background: linear-gradient(45deg, #00bcd4, #007bff);
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+        }
+        
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+            background: linear-gradient(45deg, #0097a7, #005bb5);
+        }
+        
+        input,
+        select {
+            padding: 14px;
+            width: 100%;
+            font-size: 16px;
+            margin: 15px 0;
+            border-radius: 12px;
+            border: 1px solid #e0e0e0;
+            background: #fff;
+            transition: all 0.3s ease;
+        }
+        
+        input:focus,
+        select:focus {
+            outline: none;
+            border-color: #00bcd4;
+            box-shadow: 0 0 8px rgba(0, 188, 212, 0.3);
+        }
+        
+        #map-container {
+            margin-top: 20px;
+            border-radius: 20px;
+            overflow: hidden;
+            height: 600px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        }
+        
+        #map {
+            height: 100%;
+            width: 100%;
+        }
+        
+        .hospital-card {
+            background: #fff;
+            margin: 15px 0;
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: transform 0.3s ease;
+        }
+        
+        .hospital-card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .hospital-info {
+            flex: 1;
+        }
+        
+        .hospital-actions {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .action-btn {
+            padding: 8px 16px;
+            font-size: 14px;
+            border-radius: 8px;
+        }
+        
+        .filter-panel {
+            display: flex;
+            gap: 10px;
+            margin: 20px 0;
+            flex-wrap: wrap;
+        }
+        
+        .symptom-suggestion {
+            background: #f5f5f5;
+            padding: 10px;
+            border-radius: 10px;
+            margin: 10px 0;
+            cursor: pointer;
+        }
+        
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #e0e0e0;
+            border-radius: 4px;
+            overflow: hidden;
+            margin: 20px 0;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: #00bcd4;
+            transition: width 0.5s ease;
+        }
+        
+        .chat-container {
+            background: #fff;
+            border-radius: 20px;
+            padding: 20px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        }
+        
+        .emergency-button {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            padding: 15px;
+            background: #ff4444;
+            border-radius: 50%;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+            cursor: pointer;
+            z-index: 1000;
+        }
+        
+        .emergency-button:hover {
+            background: #cc0000;
+        }
+        
+        .voice-input {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .voice-btn {
+            padding: 10px;
+            background: #4caf50;
+            border-radius: 50%;
+        }
+        
+        .theme-toggle {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 10px;
+            background: #fff;
+            border-radius: 50%;
+            cursor: pointer;
+            z-index: 1000;
+        }
+        
+        .dark-theme {
+            background: linear-gradient(135deg, #2c3e50, #34495e);
+            color: #ecf0f1;
+        }
+        
+        .dark-theme .hospital-card,
+        .dark-theme .chat-container {
+            background: #3b4a5e;
+            color: #ecf0f1;
+        }
+        
+        .dark-theme input,
+        .dark-theme select {
+            background: #4a596b;
+            color: #ecf0f1;
+            border-color: #5d6d82;
+        }
+        
+        .reminder-panel {
+            margin: 20px 0;
+            padding: 15px;
+            background: #e8f4f8;
+            border-radius: 15px;
+        }
+        
+        .medication-list {
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        
+        .background-particles {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            background: url('https://www.transparenttextures.com/patterns/stardust.png');
+            opacity: 0.1;
+        }
+        
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="background-particles"></div>
+
+    <div class="theme-toggle" id="theme-toggle">
+        <svg width="24" height="24" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M12 16a4 4 0 1 1 0-8 4 4 0 0 1 0 8zm0-10a6 6 0 1 0 0 12 6 6 0 0 0 0-12zM12 0h2v4h-2zM12 20h2v4h-2zM4.93 4.93l1.41 1.41-2.83 2.83-1.41-1.41zM17.66 17.66l1.41 1.41-2.83 2.83-1.41-1.41zM0 12h4v2H0zM20 12h4v2h-4zM4.93 19.07l2.83-2.83 1.41 1.41-2.83 2.83zM17.66 6.34l2.83-2.83 1.41 1.41-2.83 2.83z"/>
+        </svg>
+    </div>
+
+    <header id="home">
+        <h1>FitFusion</h1>
+        <p style="font-size: 18px; margin: 10px 0;">Your AI-Powered Healthcare Companion</p>
+        <div class="nav-buttons">
+            <button id="health-check-btn">🩺 Health Check</button>
+            <button id="ai-assistant-btn">🤖 AI Assistant</button>
+            <button id="wellness-hub-btn">🌿 Wellness Hub</button>
+        </div>
+    </header>
+
+    <div class="page" id="problem">
+        <button id="problem-back-btn">Back to Home</button>
+        <h2>Check Your Symptoms</h2>
+        <div class="voice-input">
+            <input type="text" id="symptoms" placeholder="e.g., headache, chest pain...">
+            <button class="voice-btn" id="voice-btn">🎤</button>
+        </div>
+        <div id="symptom-suggestions"></div>
+        <div class="progress-bar">
+            <div class="progress-fill" style="width: 0%"></div>
+        </div>
+        <div class="filter-panel">
+            <button id="remedies-btn">Get Remedies</button>
+            <button id="hospitals-btn">Find Hospitals</button>
+            <button id="specialists-btn">Find Specialists</button>
+        </div>
+        <div class="filter-panel" id="hospital-filters" style="display:none;">
+            <button id="filter-nearby-btn">Nearby</button>
+            <button id="filter-best-btn">Top Rated</button>
+            <button id="filter-specialized-btn">Specialized</button>
+            <select id="specialty-filter">
+                <option value="">Select Specialty</option>
+                <option value="cardiology">Cardiology</option>
+                <option value="neurology">Neurology</option>
+                <option value="orthopedics">Orthopedics</option>
+            </select>
+        </div>
+        <input type="text" id="search-input" placeholder="Search hospitals..." style="display:none;">
+        <div id="advice" class="chat-container"></div>
+        <div id="map-container" style="display:none;">
+            <div id="map"></div>
+        </div>
+        <div id="hospital-result"></div>
+    </div>
+
+    <div class="page" id="chat">
+        <button id="chat-back-btn">Back to Home</button>
+        <h2>Your Health Assistant</h2>
+        <div class="chat-container">
+            <iframe src="https://www.chatbase.co/chatbot-iframe/oSpnYGLwf77drK_IhXu0Y" width="100%" style="height: 600px; border: none;"></iframe>
+        </div>
+    </div>
+
+    <div class="page" id="wellness">
+        <button id="wellness-back-btn">Back to Home</button>
+        <h2>Wellness Hub</h2>
+        <div class="chat-container">
+            <h3>Daily Health Tips</h3>
+            <div id="health-tips"></div>
+            <h3>Track Your Vitals</h3>
+            <input type="number" id="heart-rate" placeholder="Heart Rate (bpm)">
+            <input type="text" id="blood-pressure" placeholder="Blood Pressure (e.g., 120/80)">
+            <button id="save-vitals-btn">Save Vitals</button>
+            <h3>Medication Reminders</h3>
+            <input type="text" id="medication-name" placeholder="Medication Name">
+            <input type="time" id="medication-time" placeholder="Reminder Time">
+            <button id="add-reminder-btn">Add Reminder</button>
+            <div class="medication-list" id="reminder-list"></div>
+        </div>
+    </div>
+
+    <div class="emergency-button" id="emergency-btn">
+        <svg width="24" height="24" fill="white" viewBox="0 0 24 24">
+            <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm0 22c-5.523 0-10-4.477-10-10S6.477 2 12 2s10 4.477 10 10-4.477 10-10 10zm5-10h-4v4h-2v-4H7v-2h4V6h2v4h4v2z"/>
+        </svg>
+    </div>
+
+    <script>
+        // Initialize Leaflet map
+        const map = L.map('map').setView([20.5937, 78.9629], 5);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+        const markers = L.markerClusterGroup();
+        map.addLayer(markers);
+        let hospitals = [];
+        let userLocation = null;
+        const pages = document.querySelectorAll('.page');
+        let reminders = JSON.parse(localStorage.getItem('reminders')) || [];
+
+        function showPage(id) {
+            try {
+                document.getElementById('home').style.display = id !== 'home' ? 'none' : 'block';
+                pages.forEach(p => p.classList.remove('active'));
+                if (id) document.getElementById(id).classList.add('active');
+                if (id === 'problem') setTimeout(() => map.invalidateSize(), 200);
+                if (id === 'wellness') displayReminders();
+            } catch (e) {
+                console.error('Error in showPage:', e);
+            }
+        }
+
+        function getAdvice() {
+            try {
+                const symptoms = document.getElementById('symptoms').value;
+                if (!symptoms) {
+                    alert('Please enter symptoms.');
+                    return;
+                }
+                document.querySelector('.progress-fill').style.width = '30%';
+                fetch('http://localhost:5000/analyze', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            symptoms
+                        })
+                    })
+                    .then(res => res.json())
+                    .then(data => {
+                        document.querySelector('.progress-fill').style.width = '100%';
+                        document.getElementById('advice').innerHTML = `
+                        <h3>Health Insights</h3>
+                        <p>${data.advice || 'No advice available.'}</p>
+                        <button id="save-advice-btn">Save to Profile</button>
+                        <button id="share-advice-btn">Share Advice</button>
+                    `;
+                        setTimeout(() => document.querySelector('.progress-fill').style.width = '0%', 500);
+                        // Bind advice buttons
+                        document.getElementById('save-advice-btn').addEventListener('click', saveAdvice);
+                        document.getElementById('share-advice-btn').addEventListener('click', shareAdvice);
+                    })
+                    .catch(err => {
+                        console.error('Fetch error:', err);
+                        alert('Failed to fetch advice.');
+                    });
+            } catch (e) {
+                console.error('Error in getAdvice:', e);
+                alert('An error occurred while fetching advice.');
+            }
+        }
+
+        function getLocation() {
+            try {
+                navigator.geolocation.getCurrentPosition(pos => {
+                    userLocation = {
+                        lat: pos.coords.latitude,
+                        lon: pos.coords.longitude
+                    };
+                    map.setView([userLocation.lat, userLocation.lon], 13);
+                    document.getElementById('map-container').style.display = 'block';
+                    document.getElementById('hospital-filters').style.display = 'flex';
+                    document.getElementById('search-input').style.display = 'block';
+                    setTimeout(() => map.invalidateSize(), 300);
+                    fetchHospitals();
+                }, () => {
+                    alert("Location access denied. Using default location.");
+                    userLocation = {
+                        lat: 20.5937,
+                        lon: 78.9629
+                    };
+                    fetchHospitals();
+                });
+            } catch (e) {
+                console.error('Error in getLocation:', e);
+            }
+        }
+
+        function fetchHospitals() {
+            try {
+                fetch('http://localhost:5000/hospitals', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            latitude: userLocation.lat,
+                            longitude: userLocation.lon
+                        })
+                    })
+                    .then(res => res.json())
+                    .then(data => {
+                        hospitals = data.hospitals || [];
+                        showHospitals(hospitals);
+                    })
+                    .catch(err => {
+                        console.error('Fetch hospitals error:', err);
+                        alert('Failed to fetch hospitals.');
+                    });
+            } catch (e) {
+                console.error('Error in fetchHospitals:', e);
+            }
+        }
+
+        function showHospitals(list) {
+            try {
+                markers.clearLayers();
+                let html = '';
+                list.forEach(h => {
+                            // Safely handle undefined properties
+                            const specialty = h.specialty || 'General';
+                            const phone = h.phone || '';
+                            html += `
+                        <div class="hospital-card">
+                            <div class="hospital-info">
+                                <h4>${h.name || 'Unknown Hospital'}</h4>
+                                <p>${(h.distance || 0).toFixed(2)} km | ⭐ ${h.rating || 'N/A'}</p>
+                                <p>${specialty}</p>
+                            </div>
+                            <div class="hospital-actions">
+                                <button class="action-btn" style="background: #4caf50" onclick="openDirections(${h.lat || 0}, ${h.lon || 0})">Directions</button>
+                                <button class="action-btn" style="background: #2196f3" onclick="bookAppointment('${h.name || ''}')">Book</button>
+                                ${phone ? `<button class="action-btn" style="background: #ff9800" onclick="callHospital('${phone}')">Call</button>` : ''}
+                            </div>
+                        </div>
+                    `;
+                    const marker = L.marker([h.lat || 0, h.lon || 0]).bindPopup(`
+                        <div class='popup-content'>
+                            <b>${h.name || 'Unknown'}</b><br>${(h.distance || 0).toFixed(2)} km<br>⭐ ${h.rating || 'N/A'}<br>${specialty}
+                        </div>
+                    `);
+                    markers.addLayer(marker);
+                });
+                document.getElementById('hospital-result').innerHTML = html;
+            } catch (e) {
+                console.error('Error in showHospitals:', e);
+            }
+        }
+
+        function filterHospitals(type) {
+            try {
+                let sorted = [...hospitals];
+                if (type === 'nearby') sorted.sort((a, b) => (a.distance || 0) - (b.distance || 0));
+                else if (type === 'best') sorted.sort((a, b) => (b.rating || 0) - (a.rating || 0));
+                else if (type === 'specialized') sorted = sorted.filter(h => h.specialty && h.specialty !== 'General');
+                showHospitals(sorted);
+            } catch (e) {
+                console.error('Error in filterHospitals:', e);
+            }
+        }
+
+        function filterBySpecialty(specialty) {
+            try {
+                const filtered = specialty ? hospitals.filter(h => (h.specialty || '').toLowerCase() === specialty) : hospitals;
+                showHospitals(filtered);
+            } catch (e) {
+                console.error('Error in filterBySpecialty:', e);
+            }
+        }
+
+        function searchHospitals(query) {
+            try {
+                const filtered = hospitals.filter(h => (h.name || '').toLowerCase().includes(query.toLowerCase()));
+                showHospitals(filtered);
+            } catch (e) {
+                console.error('Error in searchHospitals:', e);
+            }
+        }
+
+        function openDirections(lat, lon) {
+            try {
+                if (userLocation) {
+                    window.open(`https://www.google.com/maps/dir/?api=1&origin=${userLocation.lat},${userLocation.lon}&destination=${lat},${lon}`, '_blank');
+                } else {
+                    alert("Please allow location access.");
+                }
+            } catch (e) {
+                console.error('Error in openDirections:', e);
+            }
+        }
+
+        function suggestSymptoms(input) {
+            try {
+                const suggestions = ['headache', 'fever', 'chest pain', 'fatigue', 'cough', 'nausea', 'dizziness'].filter(s => s.toLowerCase().includes(input.toLowerCase()));
+                document.getElementById('symptom-suggestions').innerHTML = suggestions.map(s => `
+                    <div class="symptom-suggestion" onclick="selectSuggestion('${s}')">${s}</div>
+                `).join('');
+            } catch (e) {
+                console.error('Error in suggestSymptoms:', e);
+            }
+        }
+
+        function selectSuggestion(symptom) {
+            try {
+                document.getElementById('symptoms').value = symptom;
+                document.getElementById('symptom-suggestions').innerHTML = '';
+                getAdvice();
+            } catch (e) {
+                console.error('Error in selectSuggestion:', e);
+            }
+        }
+
+        function startVoiceInput() {
+            try {
+                if ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window) {
+                    const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+                    recognition.lang = 'en-US';
+                    recognition.onresult = event => {
+                        const transcript = event.results[0][0].transcript;
+                        document.getElementById('symptoms').value = transcript;
+                        suggestSymptoms(transcript);
+                        getAdvice();
+                    };
+                    recognition.onerror = () => alert("Voice input failed. Please try again.");
+                    recognition.start();
+                } else {
+                    alert("Voice input not supported in this browser.");
+                }
+            } catch (e) {
+                console.error('Error in startVoiceInput:', e);
+            }
+        }
+
+        function showSpecialists() {
+            try {
+                const symptoms = document.getElementById('symptoms').value.toLowerCase();
+                const symptomSpecialtyMap = {
+                    'chest pain': 'cardiology',
+                    'headache': 'neurology',
+                    'joint pain': 'orthopedics'
+                };
+                const specialty = Object.keys(symptomSpecialtyMap).find(key => symptoms.includes(key)) ? symptomSpecialtyMap[Object.keys(symptomSpecialtyMap).find(key => symptoms.includes(key))] : 'general';
+                filterBySpecialty(specialty);
+                alert(`Showing ${specialty} specialists for your symptoms.`);
+            } catch (e) {
+                console.error('Error in showSpecialists:', e);
+            }
+        }
+
+        function bookAppointment(hospitalName) {
+            try {
+                alert(`Booking appointment at ${hospitalName}... (Feature under development)`);
+            } catch (e) {
+                console.error('Error in bookAppointment:', e);
+            }
+        }
+
+        function callHospital(phone) {
+            try {
+                if (phone) {
+                    window.location.href = `tel:${phone}`;
+                } else {
+                    alert("Phone number not available for this hospital.");
+                }
+            } catch (e) {
+                console.error('Error in callHospital:', e);
+            }
+        }
+
+        function saveAdvice() {
+            try {
+                const advice = document.getElementById('advice').querySelector('p')?.textContent || '';
+                if (advice) {
+                    localStorage.setItem('savedAdvice', advice);
+                    alert("Advice saved to your profile!");
+                } else {
+                    alert("No advice to save.");
+                }
+            } catch (e) {
+                console.error('Error in saveAdvice:', e);
+            }
+        }
+
+        function shareAdvice() {
+            try {
+                const advice = document.getElementById('advice').querySelector('p')?.textContent || '';
+                if (!advice) {
+                    alert("No advice to share.");
+                    return;
+                }
+                if (navigator.share) {
+                    navigator.share({
+                        title: 'FitFusion Health Advice',
+                        text: advice,
+                        url: window.location.href
+                    }).catch(() => alert("Sharing failed."));
+                } else {
+                    navigator.clipboard.writeText(advice).then(() => alert("Advice copied to clipboard!"));
+                }
+            } catch (e) {
+                console.error('Error in shareAdvice:', e);
+            }
+        }
+
+        function saveVitals() {
+            try {
+                const heartRate = document.getElementById('heart-rate').value;
+                const bloodPressure = document.getElementById('blood-pressure').value;
+                if (heartRate && bloodPressure) {
+                    localStorage.setItem('vitals', JSON.stringify({ heartRate, bloodPressure, date: new Date().toLocaleDateString() }));
+                    alert(`Vitals saved: Heart Rate - ${heartRate} bpm, Blood Pressure - ${bloodPressure}`);
+                } else {
+                    alert("Please enter both heart rate and blood pressure.");
+                }
+            } catch (e) {
+                console.error('Error in saveVitals:', e);
+            }
+        }
+
+        function addReminder() {
+            try {
+                const name = document.getElementById('medication-name').value;
+                const time = document.getElementById('medication-time').value;
+                if (name && time) {
+                    reminders.push({ name, time });
+                    localStorage.setItem('reminders', JSON.stringify(reminders));
+                    displayReminders();
+                    scheduleNotification(name, time);
+                    document.getElementById('medication-name').value = '';
+                    document.getElementById('medication-time').value = '';
+                } else {
+                    alert("Please enter medication name and time.");
+                }
+            } catch (e) {
+                console.error('Error in addReminder:', e);
+            }
+        }
+
+        function displayReminders() {
+            try {
+                const list = document.getElementById('reminder-list');
+                list.innerHTML = reminders.map((r, i) => `
+                    <div style="padding: 10px; border-bottom: 1px solid #e0e0e0;">
+                        ${r.name} at ${r.time}
+                        <button style="float: right; background: #ff4444; padding: 5px 10px;" onclick="deleteReminder(${i})">Delete</button>
+                    </div>
+                `).join('');
+            } catch (e) {
+                console.error('Error in displayReminders:', e);
+            }
+        }
+
+        function deleteReminder(index) {
+            try {
+                reminders.splice(index, 1);
+                localStorage.setItem('reminders', JSON.stringify(reminders));
+                displayReminders();
+            } catch (e) {
+                console.error('Error in deleteReminder:', e);
+            }
+        }
+
+        function scheduleNotification(name, time) {
+            try {
+                const [hours, minutes] = time.split(':').map(Number);
+                const now = new Date();
+                const reminderTime = new Date(now.getFullYear(), now.getMonth(), now.getDate(), hours, minutes);
+                if (reminderTime < now) reminderTime.setDate(now.getDate() + 1);
+                const msUntilReminder = reminderTime - now;
+                setTimeout(() => {
+                    if (Notification.permission === 'granted') {
+                        new Notification(`Time to take ${name}!`);
+                    } else if (Notification.permission !== 'denied') {
+                        Notification.requestPermission().then(permission => {
+                            if (permission === 'granted') new Notification(`Time to take ${name}!`);
+                        });
+                    }
+                }, msUntilReminder);
+            } catch (e) {
+                console.error('Error in scheduleNotification:', e);
+            }
+        }
+
+        function emergencyCall() {
+            try {
+                if (confirm("Call emergency services?")) {
+                    window.location.href = "tel:911";
+                }
+            } catch (e) {
+                console.error('Error in emergencyCall:', e);
+            }
+        }
+
+        function toggleTheme() {
+            try {
+                document.body.classList.toggle('dark-theme');
+                localStorage.setItem('theme', document.body.classList.contains('dark-theme') ? 'dark' : 'light');
+            } catch (e) {
+                console.error('Error in toggleTheme:', e);
+            }
+        }
+
+        function loadHealthTips() {
+            try {
+                const tips = [
+                    "Stay hydrated: Drink 8-10 glasses of water daily.",
+                    "Exercise for 30 minutes most days of the week.",
+                    "Get 7-8 hours of quality sleep each night.",
+                    "Eat a balanced diet rich in fruits and vegetables."
+                ];
+                document.getElementById('health-tips').innerHTML = tips.map(t => `<p>✅ ${t}</p>`).join('');
+            } catch (e) {
+                console.error('Error in loadHealthTips:', e);
+            }
+        }
+
+        // Event Listeners
+        function initializeEventListeners() {
+            try {
+                // Header navigation
+                document.getElementById('health-check-btn').addEventListener('click', () => showPage('problem'));
+                document.getElementById('ai-assistant-btn').addEventListener('click', () => showPage('chat'));
+                document.getElementById('wellness-hub-btn').addEventListener('click', () => showPage('wellness'));
+
+                // Back buttons
+                document.getElementById('problem-back-btn').addEventListener('click', () => showPage('home'));
+                document.getElementById('chat-back-btn').addEventListener('click', () => showPage('home'));
+                document.getElementById('wellness-back-btn').addEventListener('click', () => showPage('home'));
+
+                // Problem page actions
+                document.getElementById('remedies-btn').addEventListener('click', getAdvice);
+                document.getElementById('hospitals-btn').addEventListener('click', getLocation);
+                document.getElementById('specialists-btn').addEventListener('click', showSpecialists);
+                document.getElementById('voice-btn').addEventListener('click', startVoiceInput);
+                document.getElementById('symptoms').addEventListener('input', () => suggestSymptoms(document.getElementById('symptoms').value));
+                document.getElementById('search-input').addEventListener('input', () => searchHospitals(document.getElementById('search-input').value));
+                document.getElementById('specialty-filter').addEventListener('change', () => filterBySpecialty(document.getElementById('specialty-filter').value));
+                document.getElementById('filter-nearby-btn').addEventListener('click', () => filterHospitals('nearby'));
+                document.getElementById('filter-best-btn').addEventListener('click', () => filterHospitals('best'));
+                document.getElementById('filter-specialized-btn').addEventListener('click', () => filterHospitals('specialized'));
+
+                // Wellness page actions
+                document.getElementById('save-vitals-btn').addEventListener('click', saveVitals);
+                document.getElementById('add-reminder-btn').addEventListener('click', addReminder);
+
+                // Theme and emergency
+                document.getElementById('theme-toggle').addEventListener('click', toggleTheme);
+                document.getElementById('emergency-btn').addEventListener('click', emergencyCall);
+            } catch (e) {
+                console.error('Error initializing event listeners:', e);
+            }
+        }
+
+        // Initialize
+        try {
+            loadHealthTips();
+            displayReminders();
+            if (localStorage.getItem('theme') === 'dark') document.body.classList.add('dark-theme');
+            if (Notification.permission !== 'granted') Notification.requestPermission();
+            initializeEventListeners();
+        } catch (e) {
+            console.error('Initialization error:', e);
+        }
+    </script>
+</body>
+
+</html>
